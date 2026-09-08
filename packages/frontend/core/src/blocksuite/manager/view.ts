@@ -20,6 +20,7 @@ import { AffineIconPickerExtension } from '@affine/core/blocksuite/view-extensio
 import { AffineLinkPreviewExtension } from '@affine/core/blocksuite/view-extensions/link-preview-service';
 import { MobileViewExtension } from '@affine/core/blocksuite/view-extensions/mobile';
 import { PdfViewExtension } from '@affine/core/blocksuite/view-extensions/pdf';
+import { TextFileViewExtension } from '@affine/core/blocksuite/view-extensions/text-file-view';
 import { AffineThemeViewExtension } from '@affine/core/blocksuite/view-extensions/theme';
 import { TurboRendererViewExtension } from '@affine/core/blocksuite/view-extensions/turbo-renderer';
 import { PeekViewService } from '@affine/core/modules/peek-view';
@@ -56,6 +57,7 @@ type Configure = {
   cloud: (framework?: FrameworkProvider, enableCloud?: boolean) => Configure;
   turboRenderer: (enableTurboRenderer?: boolean) => Configure;
   pdf: (enablePDFEmbedPreview?: boolean, reactToLit?: ReactToLit) => Configure;
+  textFileView: (reactToLit?: ReactToLit) => Configure;
   mobile: (framework?: FrameworkProvider) => Configure;
   ai: (enable?: boolean, framework?: FrameworkProvider) => Configure;
   electron: (framework?: FrameworkProvider) => Configure;
@@ -96,6 +98,7 @@ class ViewProvider {
       TurboRendererViewExtension,
       CloudViewExtension,
       PdfViewExtension,
+      TextFileViewExtension,
       MobileViewExtension,
       AIViewExtension,
       ElectronViewExtension,
@@ -123,6 +126,7 @@ class ViewProvider {
       cloud: this._configureCloud,
       turboRenderer: this._configureTurboRenderer,
       pdf: this._configurePdf,
+      textFileView: this._configureTextFileView,
       mobile: this._configureMobile,
       ai: this._configureAI,
       electron: this._configureElectron,
@@ -147,6 +151,7 @@ class ViewProvider {
       .cloud()
       .turboRenderer()
       .pdf()
+      .textFileView()
       .mobile()
       .ai()
       .electron()
@@ -308,6 +313,11 @@ class ViewProvider {
       enablePDFEmbedPreview,
       reactToLit,
     });
+    return this.config;
+  };
+
+  private readonly _configureTextFileView = (reactToLit?: ReactToLit) => {
+    this._manager.configure(TextFileViewExtension, { reactToLit });
     return this.config;
   };
 

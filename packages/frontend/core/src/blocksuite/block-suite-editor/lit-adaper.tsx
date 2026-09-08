@@ -105,6 +105,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
       .cloud(framework, isCloud)
       .turboRenderer(enableTurboRenderer)
       .pdf(enablePDFEmbedPreview, reactToLit)
+      .textFileView(reactToLit)
       .edgelessBlockHeader({
         framework,
         isInPeekView,
