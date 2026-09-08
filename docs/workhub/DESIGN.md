@@ -87,7 +87,7 @@ Source of truth: `doodle-note` packages `meetings-store`, `ai`, `engine`.
 ## Canvas requirements (user-facing)
 
 1. **Any-file-type on canvas**: attachment blocks for html/md/txt/docx/pdf
-   (and images/video natively). 
+   (and images/video natively).
 2. **Click-to-preview, not download**: extend the `peek-view`/`pdf` modules
    with renderers for text/markdown/html (inline) and docx (converted
    preview). Word previews render read-only (no import required).
@@ -114,6 +114,15 @@ Source of truth: `doodle-note` packages `meetings-store`, `ai`, `engine`.
 3. Legacy import: round-trip the three JSON formats.
 4. Canvas: file attachment + preview renderers + connector mind-maps.
 5. Self-host smoke: backend server + docker compose on the NAS (v3 gate).
+
+## Status log
+
+- 2026-09-08: fork created, module design drafted, Meetings module scaffolded
+  (`ai/` port complete with tests, `store/` + `services/` doc-backed,
+  registered in `modules/index.ts`), text/md/html attachment previews wired
+  into both peek view and canvas embed (`blocksuite/attachment-viewer/`).
+  NAS share remounted with `mfsymlinks` (fstab) so yarn workspace symlinks
+  work — applies to all future JS projects on the NAS.
 
 ## Open questions for Dan
 

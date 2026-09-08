@@ -45,6 +45,19 @@ export function getAttachmentType(model: AttachmentBlockModel) {
     return 'pdf';
   }
 
+  // Text-family MIME types — preview instead of download.
+  if (type === 'text/markdown' || type === 'text/x-markdown') {
+    return 'markdown';
+  }
+
+  if (type === 'text/html' || type === 'application/xhtml+xml') {
+    return 'html';
+  }
+
+  if (type.startsWith('text/')) {
+    return 'text';
+  }
+
   // If MIME type doesn't match, check file extension
   const ext = model.props.name.split('.').pop()?.toLowerCase() ?? '';
 
@@ -62,6 +75,18 @@ export function getAttachmentType(model: AttachmentBlockModel) {
 
   if (ext === 'pdf') {
     return 'pdf';
+  }
+
+  if (ext === 'md' || ext === 'markdown') {
+    return 'markdown';
+  }
+
+  if (ext === 'html' || ext === 'htm') {
+    return 'html';
+  }
+
+  if (ext === 'txt' || ext === 'text' || ext === 'log') {
+    return 'text';
   }
 
   return 'unknown';

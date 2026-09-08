@@ -41,6 +41,7 @@ import { configureIntegrationModule } from './integration';
 import { configureJournalModule } from './journal';
 import { configureLifecycleModule } from './lifecycle';
 import { configureMediaModule } from './media';
+import { configureMeetingsModule } from './meetings';
 import { configureNavigationModule } from './navigation';
 import { configureNavigationPanelModule } from './navigation-panel';
 import { configureNotificationModule } from './notification';
@@ -108,6 +109,7 @@ export function configureCommonModules(framework: Framework) {
   configureUserspaceModule(framework);
   configureAppSidebarModule(framework);
   configureJournalModule(framework);
+  configureMeetingsModule(framework);
   configureUrlModule(framework);
   configureAppThemeModule(framework);
   configureDialogModule(framework);
