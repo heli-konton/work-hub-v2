@@ -10,6 +10,33 @@ import {
 import { buildMergeUserMessage } from '../ai/prompt';
 import { NOTE_TEMPLATES, templateById } from '../ai/templates';
 import type { MergeSegment, NotesEngine } from '../ai/types';
+import { buildEngineFromSettings } from '../services/ai';
+import { segmentsBlobKey } from '../services/meetings';
+import { DEEPSEEK_DEFAULTS } from '../store/ai-setting';
+
+describe('meetings ai — provider wiring', () => {
+  it('builds a DeepSeek engine from default settings', () => {
+    const engine = buildEngineFromSettings(DEEPSEEK_DEFAULTS);
+    expect(engine.id).toBe(
+      `http:${DEEPSEEK_DEFAULTS.baseUrl}:${DEEPSEEK_DEFAULTS.model}`
+    );
+    expect(engine.singlePassThresholdChars).toBe(96_000);
+  });
+
+  it('builds a local Ollama engine when pointed at one', () => {
+    const engine = buildEngineFromSettings({
+      ...DEEPSEEK_DEFAULTS,
+      baseUrl: 'http://nova-core:11434/v1',
+      model: 'llama3.1',
+    });
+    expect(engine.id).toContain('nova-core');
+    expect(engine.id).toContain('llama3.1');
+  });
+
+  it('derives the segments blob key from the meeting id', () => {
+    expect(segmentsBlobKey('abc-123')).toBe('meeting-abc-123-segments.json');
+  });
+});
 
 describe('meetings ai — templates', () => {
   it('ships all seven meeting templates', () => {
