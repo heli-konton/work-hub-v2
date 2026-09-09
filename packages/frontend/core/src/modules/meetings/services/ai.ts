@@ -56,4 +56,11 @@ export class MeetingsAIService extends Service {
       input.onToken
     );
   }
+
+  updateSetting<K extends keyof MeetingsAISettings>(
+    key: K,
+    value: MeetingsAISettings[K]
+  ) {
+    this.settingStore.updateSetting(key, value);
+  }
 }

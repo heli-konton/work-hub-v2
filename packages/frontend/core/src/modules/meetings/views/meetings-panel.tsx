@@ -8,17 +8,15 @@ import { parseTranscriptLines } from '../ai/parse-transcript';
 import { NOTE_TEMPLATES } from '../ai/templates';
 import { MeetingsAIService } from '../services/ai';
 import { MeetingsService } from '../services/meetings';
-import { MeetingsAISettingStore } from '../store/ai-setting';
 import * as styles from './meetings-panel.css';
 
 export const MeetingsPanel = () => {
   const meetingsService = useService(MeetingsService);
   const aiService = useService(MeetingsAIService);
-  const settingStore = useService(MeetingsAISettingStore);
   const workbenchService = useService(WorkbenchService);
 
   const meetings = useLiveData(meetingsService.allMeetings$);
-  const setting = useLiveData(settingStore.watchEffectiveSetting());
+  const setting = useLiveData(aiService.setting$);
 
   const [title, setTitle] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -97,8 +95,8 @@ export const MeetingsPanel = () => {
   };
 
   const saveSettings = () => {
-    if (apiKey.trim()) settingStore.updateSetting('apiKey', apiKey.trim());
-    if (model.trim()) settingStore.updateSetting('model', model.trim());
+    if (apiKey.trim()) aiService.updateSetting('apiKey', apiKey.trim());
+    if (model.trim()) aiService.updateSetting('model', model.trim());
     setShowSettings(false);
     setMessage('AI provider settings saved.');
   };
