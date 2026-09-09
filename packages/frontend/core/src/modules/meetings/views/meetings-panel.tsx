@@ -5,10 +5,13 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { useMemo, useState } from 'react';
 
 import { parseTranscriptLines } from '../ai/parse-transcript';
+import { formatTranscript } from '../ai/prompt';
 import { NOTE_TEMPLATES } from '../ai/templates';
+import type { MergeSegment } from '../ai/types';
 import { MeetingsAIService } from '../services/ai';
 import { MeetingsService } from '../services/meetings';
 import * as styles from './meetings-panel.css';
+import { RecordingBar } from './recording-bar';
 
 export const MeetingsPanel = () => {
   const meetingsService = useService(MeetingsService);
@@ -101,6 +104,12 @@ export const MeetingsPanel = () => {
     setMessage('AI provider settings saved.');
   };
 
+  const onRecordedSegments = (segments: MergeSegment[]) => {
+    if (segments.length === 0) return;
+    const lines = formatTranscript(segments);
+    setTranscript(prev => (prev.trim() ? `${prev}\n${lines}` : lines));
+  };
+
   return (
     <div className={styles.root}>
       <div className={styles.header}>
@@ -159,6 +168,11 @@ export const MeetingsPanel = () => {
           <div className={styles.fieldLabel}>
             Meeting: {selected.meta$.value.title ?? 'Untitled meeting'}
           </div>
+
+          <RecordingBar
+            onSegments={onRecordedSegments}
+            disabled={busy !== null}
+          />
 
           <label className={styles.fieldLabel}>Template</label>
           <select

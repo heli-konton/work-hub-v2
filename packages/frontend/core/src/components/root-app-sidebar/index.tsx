@@ -48,6 +48,7 @@ import {
 } from './index.css';
 import { InviteMembersButton } from './invite-members-button';
 import { AppSidebarJournalButton } from './journal-button';
+import { AppSidebarMeetingsButton } from './meetings-button';
 import { NotificationButton } from './notification-button';
 import { SidebarAudioPlayer } from './sidebar-audio-player';
 import { TemplateDocEntrance } from './template-doc-entrance';
@@ -213,6 +214,7 @@ export const RootAppSidebar = memo((): ReactElement => {
         </div>
         <AllDocsButton />
         <AppSidebarJournalButton />
+        <AppSidebarMeetingsButton />
         {sessionStatus === 'authenticated' && <NotificationButton />}
         <AIChatButton />
         <MenuItem
