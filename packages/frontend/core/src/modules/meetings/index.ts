@@ -11,6 +11,7 @@ import { MeetingsStore } from './store/meetings';
 export * from './ai/ask-prompt';
 export * from './ai/http-engine';
 export * from './ai/map-reduce';
+export * from './ai/parse-transcript';
 export * from './ai/prompt';
 export * from './ai/templates';
 export * from './ai/types';
@@ -21,6 +22,7 @@ export type { MeetingsAISettings } from './store/ai-setting';
 export { DEEPSEEK_DEFAULTS, MeetingsAISettingStore } from './store/ai-setting';
 export type { MeetingDocProperties } from './store/meetings';
 export { MeetingsStore } from './store/meetings';
+export { MeetingsPanel } from './views/meetings-panel';
 
 export function configureMeetingsModule(framework: Framework) {
   framework

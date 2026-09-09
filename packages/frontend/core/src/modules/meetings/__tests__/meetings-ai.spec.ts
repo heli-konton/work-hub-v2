@@ -7,12 +7,47 @@ import {
   DEFAULT_SINGLE_PASS_CHARS,
   generateMeetingNotes,
 } from '../ai/map-reduce';
+import { parseTranscriptLines } from '../ai/parse-transcript';
 import { buildMergeUserMessage } from '../ai/prompt';
 import { NOTE_TEMPLATES, templateById } from '../ai/templates';
 import type { MergeSegment, NotesEngine } from '../ai/types';
 import { buildEngineFromSettings } from '../services/ai';
 import { segmentsBlobKey } from '../services/meetings';
 import { DEEPSEEK_DEFAULTS } from '../store/ai-setting';
+
+describe('meetings ai — transcript parsing', () => {
+  it('parses timestamped speaker lines', () => {
+    const segments = parseTranscriptLines(
+      '[12:34] You: hello\n[12:35] Them: hi'
+    );
+    expect(segments).toHaveLength(2);
+    expect(segments[0]).toEqual({
+      speaker: 'You',
+      text: 'hello',
+      startMs: (12 * 60 + 34) * 1000,
+    });
+    expect(segments[1]?.speaker).toBe('Them');
+  });
+
+  it('parses plain speaker lines with synthetic timing', () => {
+    const segments = parseTranscriptLines('Dan: let us ship it\nAnna: agreed');
+    expect(segments[0]?.speaker).toBe('Dan');
+    expect(segments[1]?.startMs).toBe(5000);
+  });
+
+  it('treats unmatched lines as the note-taker speaking', () => {
+    const segments = parseTranscriptLines('a line without a speaker');
+    expect(segments[0]).toEqual({
+      speaker: 'You',
+      text: 'a line without a speaker',
+      startMs: 0,
+    });
+  });
+
+  it('skips blank lines and empty bodies', () => {
+    expect(parseTranscriptLines('\n\nYou: \n')).toHaveLength(0);
+  });
+});
 
 describe('meetings ai — provider wiring', () => {
   it('builds a DeepSeek engine from default settings', () => {
