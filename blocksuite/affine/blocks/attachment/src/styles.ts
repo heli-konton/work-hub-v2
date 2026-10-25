@@ -247,7 +247,8 @@ export const styles = css`
     }
   }
 
-  .affine-attachment-container:hover .affine-attachment-html-resize-handle::after,
+  .affine-attachment-container:hover
+    .affine-attachment-html-resize-handle::after,
   .affine-attachment-html-resize-handle:active::after {
     opacity: 1;
   }

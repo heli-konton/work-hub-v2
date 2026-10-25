@@ -650,16 +650,20 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
           @fullscreenchange=${this._onHtmlFullscreenChange}
         >
           ${content}
-          ${showOverlay
-            ? html`<div class="affine-attachment-embed-event-mask"></div>`
-            : nothing}
+          ${
+            showOverlay
+              ? html`<div class="affine-attachment-embed-event-mask"></div>`
+              : nothing
+          }
         </div>
-        ${resizable
-          ? html`<div
-              class="affine-attachment-html-resize-handle"
-              @pointerdown=${this._onHtmlResizeStart}
-            ></div>`
-          : nothing}
+        ${
+          resizable
+            ? html`<div
+                class="affine-attachment-html-resize-handle"
+                @pointerdown=${this._onHtmlResizeStart}
+              ></div>`
+            : nothing
+        }
       </div>
     `;
   }
