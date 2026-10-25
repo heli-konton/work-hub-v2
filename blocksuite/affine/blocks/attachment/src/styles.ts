@@ -184,7 +184,11 @@ export const styles = css`
   .affine-attachment-html-header-icon {
     display: flex;
     align-items: center;
-    font-size: 16px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .affine-attachment-html-header-title {
