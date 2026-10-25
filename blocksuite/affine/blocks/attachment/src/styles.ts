@@ -157,4 +157,98 @@ export const styles = css`
     position: absolute;
     inset: 0;
   }
+
+  /* Work Hub: live HTML embeds */
+  .affine-attachment-html-embed {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .affine-attachment-html-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 6px 0 10px;
+    box-sizing: border-box;
+    border-bottom: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
+    color: var(--affine-text-secondary-color);
+    font-family: var(--affine-font-family);
+    font-size: var(--affine-font-xs);
+  }
+
+  .affine-attachment-html-header-icon {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+  }
+
+  .affine-attachment-html-header-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .affine-attachment-html-header-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font-size: 16px;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--affine-hover-color);
+    }
+  }
+
+  .affine-attachment-html-frame {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    background: #fff;
+  }
+
+  .affine-attachment-html-frame:fullscreen {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .affine-attachment-html-resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 10px;
+    cursor: ns-resize;
+    z-index: 1;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: 3px;
+      width: 40px;
+      height: 4px;
+      margin-left: -20px;
+      border-radius: 2px;
+      background: ${unsafeCSSVarV2('layer/insideBorder/primaryBorder')};
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+  }
+
+  .affine-attachment-container:hover .affine-attachment-html-resize-handle::after,
+  .affine-attachment-html-resize-handle:active::after {
+    opacity: 1;
+  }
 `;

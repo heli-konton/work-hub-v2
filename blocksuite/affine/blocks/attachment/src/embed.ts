@@ -1,5 +1,6 @@
 import {
   type AttachmentBlockModel,
+  type AttachmentBlockProps,
   type ImageBlockProps,
   MAX_IMAGE_WIDTH,
 } from '@blocksuite/affine-model';
@@ -23,6 +24,11 @@ import type { TemplateResult } from 'lit';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import {
+  HTML_EMBED_EDGELESS_HEIGHT,
+  HTML_EMBED_EDGELESS_WIDTH,
+  isHtmlAttachment,
+} from './html-embed';
 import { getAttachmentBlob } from './utils';
 
 export type AttachmentEmbedConfig = {
@@ -238,6 +244,26 @@ const embedConfig: AttachmentEmbedConfig[] = [
         height="100%"
         controls
       ></video>`,
+  },
+  {
+    // Work Hub: HTML files render live in a sandboxed frame (Obsidian-style).
+    name: 'html',
+    check: (model, maxFileSize) =>
+      isHtmlAttachment(model.props) && model.props.size <= maxFileSize,
+    action: model => {
+      const props: Partial<AttachmentBlockProps> = { embed: true };
+      if (model.parent?.flavour === 'affine:surface') {
+        const bound = Bound.deserialize(model.props.xywh);
+        bound.w = HTML_EMBED_EDGELESS_WIDTH;
+        bound.h = HTML_EMBED_EDGELESS_HEIGHT;
+        props.xywh = bound.serialize();
+      }
+      model.store.updateBlock(model, props);
+    },
+    render: model =>
+      html`<affine-attachment-html-embed
+        .model=${model}
+      ></affine-attachment-html-embed>`,
   },
   {
     name: 'audio',

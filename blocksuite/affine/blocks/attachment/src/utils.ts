@@ -20,6 +20,11 @@ import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 
 import type { AttachmentBlockComponent } from './attachment-block';
+import {
+  HTML_EMBED_EDGELESS_HEIGHT,
+  HTML_EMBED_EDGELESS_WIDTH,
+  isHtmlAttachment,
+} from './html-embed';
 
 export async function getAttachmentBlob(model: AttachmentBlockModel) {
   const { sourceId$, type$ } = model.props;
@@ -120,7 +125,8 @@ async function buildPropsWith(
       size,
       type,
       sourceId,
-      embed,
+      // Work Hub: HTML files embed live by default instead of as a file card.
+      embed: embed ?? (isHtmlAttachment({ name, type }) ? true : undefined),
     } satisfies Partial<AttachmentBlockProps>;
   } catch (err) {
     category = 'failure';
@@ -201,7 +207,12 @@ export async function addAttachments(
 
   const blocks = propsArray.map((props, index) => {
     const center = Vec.addScalar(xy, index * gap);
-    const xywh = Bound.fromCenter(center, width, height).serialize();
+    const htmlEmbed = Boolean(props.embed) && isHtmlAttachment(props);
+    const xywh = Bound.fromCenter(
+      center,
+      htmlEmbed ? HTML_EMBED_EDGELESS_WIDTH : width,
+      htmlEmbed ? HTML_EMBED_EDGELESS_HEIGHT : height
+    ).serialize();
     return { flavour, blockProps: { ...props, style, xywh } };
   });
 

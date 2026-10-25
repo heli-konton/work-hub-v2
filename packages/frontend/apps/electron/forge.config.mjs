@@ -328,10 +328,13 @@ export default {
     name: productName,
     appBundleId: fromBuildIdentifier(appIdMap),
     icon: icnsPath,
-    osxSign: {
-      identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
-      'hardened-runtime': true,
-    },
+    // Work Hub builds have no Apple Developer ID; CI ad-hoc signs instead.
+    osxSign: process.env.SKIP_OSX_SIGN
+      ? undefined
+      : {
+          identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
+          'hardened-runtime': true,
+        },
     electronZipDir: process.env.ELECTRON_FORGE_ELECTRON_ZIP_DIR,
     osxNotarize: process.env.APPLE_ID
       ? {

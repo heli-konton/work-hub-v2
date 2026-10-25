@@ -27,8 +27,10 @@ import {
   formatSize,
   openSingleFileWith,
 } from '@blocksuite/affine-shared/utils';
+import { Bound } from '@blocksuite/global/gfx';
 import {
   AttachmentIcon,
+  ExpandFullIcon,
   ResetIcon,
   UpgradeIcon,
   WarningIcon,
@@ -36,7 +38,7 @@ import {
 import { BlockSelection } from '@blocksuite/std';
 import { nanoid, Slice } from '@blocksuite/store';
 import { batch, computed, signal } from '@preact/signals-core';
-import { html, type TemplateResult } from 'lit';
+import { html, nothing, type TemplateResult } from 'lit';
 import { choose } from 'lit/directives/choose.js';
 import { type ClassInfo, classMap } from 'lit/directives/class-map.js';
 import { guard } from 'lit/directives/guard.js';
@@ -45,6 +47,12 @@ import { when } from 'lit/directives/when.js';
 import { filter } from 'rxjs/operators';
 
 import { AttachmentEmbedProvider } from './embed';
+import {
+  HTML_EMBED_DEFAULT_HEIGHT,
+  HTML_EMBED_MAX_HEIGHT,
+  HTML_EMBED_MIN_HEIGHT,
+  isHtmlAttachment,
+} from './html-embed';
 import { styles } from './styles';
 import { downloadAttachmentBlob, getFileType, refreshData } from './utils';
 
@@ -80,6 +88,33 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     width: '100%',
     margin: '18px 0px',
   });
+
+  /** True for the edgeless (canvas) variant of this block. */
+  protected readonly isGfxView: boolean = false;
+
+  // Work Hub HTML embed state. The overlay stops the iframe from swallowing
+  // pointer events while the block is dragged or resized.
+  readonly htmlDragging$ = signal(false);
+  readonly htmlResizing$ = signal(false);
+  private readonly _htmlFullscreen$ = signal(false);
+  private readonly _htmlLiveHeight$ = signal<number | null>(null);
+
+  get isHtmlEmbed() {
+    const { embed$, name$, type$ } = this.model.props;
+    return (
+      Boolean(embed$.value) &&
+      isHtmlAttachment({ name: name$.value, type: type$.value })
+    );
+  }
+
+  private get _htmlPageHeight() {
+    const live = this._htmlLiveHeight$.value;
+    if (live !== null) return live;
+    // Page mode does not position attachments, so `xywh` is free to carry
+    // the user's chosen height.
+    const { h } = Bound.deserialize(this.model.xywh$.value);
+    return h >= HTML_EMBED_MIN_HEIGHT ? h : HTML_EMBED_DEFAULT_HEIGHT;
+  }
 
   private get _maxFileSize() {
     return this.std.get(FileSizeLimitProvider).maxFileSize;
@@ -237,6 +272,22 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       this.model.props.sourceId$.subscribe(() => {
         this.refreshData();
       })
+    );
+
+    // Show the HTML embed overlay during any drag on the editor host.
+    this.handleEvent(
+      'dragStart',
+      () => {
+        this.htmlDragging$.value = true;
+      },
+      { global: true }
+    );
+    this.handleEvent(
+      'dragEnd',
+      () => {
+        this.htmlDragging$.value = false;
+      },
+      { global: true }
     );
 
     if (!this.model.props.style && !this.store.readonly) {
@@ -461,6 +512,10 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     const render = provider.getRender(model, _maxFileSize);
     if (!render) return null;
 
+    if (this.isHtmlEmbed) {
+      return this.renderHtmlEmbed(render(model, blobUrl));
+    }
+
     const enabled = provider.shouldShowStatus(model);
 
     return html`
@@ -489,6 +544,125 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       })}
     `;
   };
+
+  private readonly _onHtmlReload = (event: MouseEvent) => {
+    event.stopPropagation();
+    this.querySelector('affine-attachment-html-embed')?.reload();
+  };
+
+  private readonly _onHtmlFullscreen = (event: MouseEvent) => {
+    event.stopPropagation();
+    const frame = this.querySelector('.affine-attachment-html-frame');
+    frame?.requestFullscreen().catch(console.error);
+  };
+
+  private readonly _onHtmlFullscreenChange = () => {
+    const frame = this.querySelector('.affine-attachment-html-frame');
+    this._htmlFullscreen$.value =
+      frame !== null && document.fullscreenElement === frame;
+  };
+
+  // Page mode: drag the bottom edge to change the embed height.
+  private readonly _onHtmlResizeStart = (event: PointerEvent) => {
+    if (event.button !== 0 || this.store.readonly) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const handle = event.currentTarget as HTMLElement;
+    handle.setPointerCapture(event.pointerId);
+    const startY = event.clientY;
+    const startHeight = this._htmlPageHeight;
+    this.htmlResizing$.value = true;
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const next = startHeight + (moveEvent.clientY - startY);
+      this._htmlLiveHeight$.value = Math.round(
+        Math.min(HTML_EMBED_MAX_HEIGHT, Math.max(HTML_EMBED_MIN_HEIGHT, next))
+      );
+    };
+
+    const onEnd = () => {
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onEnd);
+      handle.removeEventListener('pointercancel', onEnd);
+
+      const height = this._htmlLiveHeight$.peek();
+      if (height !== null) {
+        const bound = Bound.deserialize(this.model.xywh$.peek());
+        bound.h = height;
+        this.store.updateBlock(this.model, { xywh: bound.serialize() });
+      }
+      batch(() => {
+        this._htmlLiveHeight$.value = null;
+        this.htmlResizing$.value = false;
+      });
+    };
+
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onEnd);
+    handle.addEventListener('pointercancel', onEnd);
+  };
+
+  protected renderHtmlEmbed(content: TemplateResult | null) {
+    const fullscreen = this._htmlFullscreen$.value;
+    // On the canvas the frame only takes pointer input once the block is
+    // selected, so clicking it first selects/moves it like any other element.
+    const showOverlay =
+      !fullscreen &&
+      (this.htmlDragging$.value ||
+        this.htmlResizing$.value ||
+        (this.isGfxView && !this.selected$.value));
+    const resizable = !this.isGfxView && !this.store.readonly;
+
+    return html`
+      <div
+        class="affine-attachment-html-embed"
+        style=${styleMap({
+          height: this.isGfxView ? '100%' : `${this._htmlPageHeight}px`,
+        })}
+      >
+        <div class="affine-attachment-html-header">
+          <div class="affine-attachment-html-header-icon">
+            ${getAttachmentFileIcon(this.filetype)}
+          </div>
+          <div class="affine-attachment-html-header-title truncate">
+            ${this.model.props.name$.value}
+          </div>
+          <button
+            class="affine-attachment-html-header-button"
+            title="Reload"
+            aria-label="Reload"
+            @click=${this._onHtmlReload}
+          >
+            ${ResetIcon()}
+          </button>
+          <button
+            class="affine-attachment-html-header-button"
+            title="Full screen"
+            aria-label="Full screen"
+            @click=${this._onHtmlFullscreen}
+          >
+            ${ExpandFullIcon()}
+          </button>
+        </div>
+        <div
+          class="affine-attachment-html-frame"
+          @fullscreenchange=${this._onHtmlFullscreenChange}
+        >
+          ${content}
+          ${showOverlay
+            ? html`<div class="affine-attachment-embed-event-mask"></div>`
+            : nothing}
+        </div>
+        ${resizable
+          ? html`<div
+              class="affine-attachment-html-resize-handle"
+              @pointerdown=${this._onHtmlResizeStart}
+            ></div>`
+          : nothing}
+      </div>
+    `;
+  }
 
   private readonly _renderCitation = () => {
     const { name, footnoteIdentifier } = this.model.props;
