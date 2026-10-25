@@ -1,6 +1,7 @@
 # Work Hub: AFFiNE 0.27.4 + live HTML attachment embeds.
-# Produces a self-host server image (official 0.27.4 server, patched web UI)
-# and an ad-hoc-signed macOS arm64 desktop app from the same commit.
+# Produces the patched web UI (artifact `web`, baked into the self-host image
+# by .github/deployment/workhub/Dockerfile) and an ad-hoc-signed macOS arm64
+# desktop app (artifact `affine-macos-arm64`) from the same commit.
 name: Work Hub HTML embed build
 
 on:
@@ -11,7 +12,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: workhub-html-embed-${{ github.ref }}
@@ -20,8 +20,6 @@ concurrency:
 env:
   APP_VERSION: 0.27.4
   BUILD_TYPE: stable
-  UPSTREAM_IMAGE: ghcr.io/toeverything/affine:0.27.4
-  IMAGE: ghcr.io/heli-konton/work-hub-affine
 
 jobs:
   check:
@@ -64,42 +62,25 @@ jobs:
           if-no-files-found: error
 
   image:
-    name: Server image
+    # GHCR rejects GITHUB_TOKEN pushes from this fork, so CI only proves the
+    # image builds; the lab host builds the same Dockerfile from the `web`
+    # artifact (see .github/deployment/workhub/Dockerfile).
+    name: Server image (build check)
     needs: [check, build-web]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/deployment/workhub
       - uses: actions/download-artifact@v4
         with:
           name: web
-          path: web
-      - name: Dockerfile
+          path: .github/deployment/workhub/web
+      - name: Build
         run: |
-          cat > Dockerfile <<'EOF'
-          ARG UPSTREAM_IMAGE
-          FROM ${UPSTREAM_IMAGE}
-          # Replace the web UI only; keep upstream admin + mobile bundles.
-          RUN find /app/static -mindepth 1 -maxdepth 1 ! -name admin ! -name mobile -exec rm -rf {} +
-          COPY web/ /app/static/
-          LABEL org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          LABEL org.opencontainers.image.description="AFFiNE 0.27.4 + Work Hub live HTML embeds"
-          EOF
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build + push
-        run: |
-          short=$(echo "$GITHUB_SHA" | cut -c1-7)
-          docker build --pull --build-arg UPSTREAM_IMAGE="$UPSTREAM_IMAGE" \
-            -t "$IMAGE:0.27.4-htmlembed-$short" -t "$IMAGE:0.27.4-htmlembed" .
-          docker push "$IMAGE:0.27.4-htmlembed-$short"
-          docker push "$IMAGE:0.27.4-htmlembed"
-          {
-            echo "### Image"
-            echo "\`$IMAGE:0.27.4-htmlembed-$short\`"
-            docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:0.27.4-htmlembed-$short"
-          } >> "$GITHUB_STEP_SUMMARY"
+          docker build --pull -t workhub/affine:0.27.4-htmlembed .github/deployment/workhub
+          docker run --rm --entrypoint sh workhub/affine:0.27.4-htmlembed \
+            -c 'grep -rlq affine-attachment-html-embed /app/static/js && ls /app/static/admin /app/static/mobile >/dev/null'
 
   desktop-web:
     name: Build desktop renderer

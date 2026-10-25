@@ -194,6 +194,7 @@ export const styles = css`
   .affine-attachment-html-header-title {
     flex: 1;
     min-width: 0;
+    align-self: center;
   }
 
   .affine-attachment-html-header-button {
