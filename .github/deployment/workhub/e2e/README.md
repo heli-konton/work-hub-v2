@@ -17,3 +17,17 @@ docker compose down -v
 Create the admin once before the stages:
 `curl -X POST -H 'content-type: application/json' -d "{\"email\":\"htmltest@example.com\",\"password\":\"$(cat .testpw)\"}" http://127.0.0.1:3020/api/setup/create-admin-user`
 (`run.sh` writes `.testpw` on first use.)
+
+## MCP extension (Obsidian bridge)
+
+Same disposable stack, with `AFFINE_MCP_WRITE: "1"` added to `x-affine-env`
+and the project renamed (`/opt/affine-mcptest`):
+
+```sh
+sh mcp-seed.sh        # admin + server workspace + READ_WRITE MCP key (.wsid/.token, 0600)
+python3 mcp_probe.py  # markdown round-trip shape, trash/restore, folder ops, retitle
+```
+
+The image build itself runs `server/workhub-test.cjs` (real yjs) and refuses to
+build if any `server/patch-server.cjs` anchor drifts. With the flag unset the
+server behaves exactly like upstream (write tools hidden, copilot guard kept).
