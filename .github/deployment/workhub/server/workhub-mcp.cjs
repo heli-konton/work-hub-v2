@@ -149,7 +149,13 @@ function tools({ writer, ac, user, workspace, tool, ok, err, z }) {
       description: 'List every doc in the workspace meta with id, title and trash state.',
       parser: z.object({}).strict(),
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-      execute: guard(async () => json(listPages(loadDoc(await writer.storage.getDoc(workspace, workspace))))),
+      execute: guard(async () => {
+        const pages = listPages(loadDoc(await writer.storage.getDoc(workspace, workspace)));
+        // per-doc last-write timestamps let the bridge skip re-reading unchanged docs
+        const stamps = typeof writer.storage.getSpaceDocTimestamps === 'function'
+          ? (await writer.storage.getSpaceDocTimestamps(workspace)) || {} : {};
+        return json(pages.map(p => ({ ...p, updatedAt: stamps[p.id] ?? null })));
+      }),
     }),
     tool({
       name: 'workhub_set_trash',

@@ -109,6 +109,18 @@ test('server patch rewrites each anchor exactly once and refuses drift', () => {
   assert.throws(() => patch(source + '\n' + PATCHES[1][0]), /matched 2 times/);
 });
 
+test('list_documents tool adds per-doc storage timestamps', async () => {
+  const stored = rootWith([{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }]);
+  const writer = { storage: {
+    getDoc: async () => ({ bin: Buffer.from(Y.encodeStateAsUpdate(stored)) }),
+    getSpaceDocTimestamps: async () => ({ a: 111 }),
+  } };
+  const z = require('zod');
+  const [list] = ext.tools({ writer, ac: {}, user: 'u', workspace: 'w', tool: t => t, ok: x => x, err: x => x, z });
+  const out = JSON.parse(await list.execute({}, {}));
+  assert.deepStrictEqual(out.map(d => [d.id, d.updatedAt]), [['a', 111], ['b', null]]);
+});
+
 test('tools() registers four tools through the provided factory', () => {
   const names = ext.tools({ writer: {}, ac: {}, user: 'u', workspace: 'w', tool: t => t, ok: x => x, err: x => x,
     z: { object: () => ({ strict: () => ({}) }), string: () => ({ min: () => ({}), nullable: () => ({}) }),
